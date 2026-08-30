@@ -1,18 +1,16 @@
 "use client";
 import React, { useState } from "react";
 import { ApplicationStatus } from "@/types";
-import { ShieldCheck, Star, MapPin, Calendar, Phone, ArrowRight, UserCheck, CheckCircle, Clock } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
+import { ShieldCheck, Star, Clock, MapPin, CheckCircle2, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
-interface CandidateCardData {
-  id: string; // Application ID
+interface KanbanCandidate {
+  id: string;
   workerProfileId: string;
   status: ApplicationStatus;
   appliedAt: string;
   matchScore: number;
   workerName: string;
-  workerAvatar?: string | null;
   workerTrade: string;
   workerExperience: number;
   workerTrustScore: number;
@@ -20,159 +18,136 @@ interface CandidateCardData {
   workerRating: number;
   jobTitle: string;
   jobId: string;
+  workerAvatar?: string;
 }
 
 interface KanbanBoardProps {
-  initialApplications: CandidateCardData[];
-  onStatusChange: (applicationId: string, newStatus: ApplicationStatus) => Promise<void>;
-  onScheduleInterview?: (candidate: CandidateCardData) => void;
+  initialApplications: KanbanCandidate[];
+  onStatusChange?: (appId: string, newStatus: ApplicationStatus) => void;
 }
 
-const COLUMNS: { status: ApplicationStatus; label: string; color: string; badgeVariant: "blue" | "slate" | "amber" | "purple" | "emerald" }[] = [
-  { status: "APPLIED", label: "Applied", color: "border-slate-300 bg-slate-50/70", badgeVariant: "slate" },
-  { status: "SCREENING", label: "Screening", color: "border-blue-300 bg-blue-50/40", badgeVariant: "blue" },
-  { status: "SHORTLISTED", label: "Shortlisted", color: "border-purple-300 bg-purple-50/40", badgeVariant: "purple" },
-  { status: "INTERVIEW", label: "Interview", color: "border-amber-300 bg-amber-50/40", badgeVariant: "amber" },
-  { status: "HIRED", label: "Hired ✓", color: "border-emerald-400 bg-emerald-50/50", badgeVariant: "emerald" },
-];
+export function KanbanBoard({ initialApplications, onStatusChange }: KanbanBoardProps) {
+  const [candidates, setCandidates] = useState<KanbanCandidate[]>(initialApplications);
+  const [activeMobileStage, setActiveMobileStage] = useState<ApplicationStatus>("APPLIED");
 
-export const KanbanBoard: React.FC<KanbanBoardProps> = ({
-  initialApplications,
-  onStatusChange,
-  onScheduleInterview
-}) => {
-  const [applications, setApplications] = useState<CandidateCardData[]>(initialApplications);
-  const [movingId, setMovingId] = useState<string | null>(null);
+  const columns: { status: ApplicationStatus; title: string; color: string; badgeBg: string }[] = [
+    { status: "APPLIED", title: "Applied", color: "border-blue-500", badgeBg: "bg-blue-50 text-blue-700" },
+    { status: "SCREENING", title: "Screening", color: "border-purple-500", badgeBg: "bg-purple-50 text-purple-700" },
+    { status: "SHORTLISTED", title: "Shortlisted", color: "border-amber-500", badgeBg: "bg-amber-50 text-amber-700" },
+    { status: "INTERVIEW", title: "Interview", color: "border-cyan-500", badgeBg: "bg-cyan-50 text-cyan-700" },
+    { status: "HIRED", title: "Hired ✓", color: "border-emerald-500", badgeBg: "bg-emerald-50 text-emerald-700" },
+  ];
 
-  const moveCandidate = async (appId: string, nextStatus: ApplicationStatus) => {
-    setMovingId(appId);
-    try {
-      await onStatusChange(appId, nextStatus);
-      setApplications(prev =>
-        prev.map(app => (app.id === appId ? { ...app, status: nextStatus } : app))
-      );
-    } finally {
-      setMovingId(null);
+  const moveCandidate = (appId: string, newStatus: ApplicationStatus) => {
+    setCandidates((prev) =>
+      prev.map((c) => (c.id === appId ? { ...c, status: newStatus } : c))
+    );
+    if (onStatusChange) {
+      onStatusChange(appId, newStatus);
     }
   };
 
-  const getNextStatus = (current: ApplicationStatus): ApplicationStatus | null => {
-    if (current === "APPLIED") return "SCREENING";
-    if (current === "SCREENING") return "SHORTLISTED";
-    if (current === "SHORTLISTED") return "INTERVIEW";
-    if (current === "INTERVIEW") return "HIRED";
-    return null;
-  };
-
   return (
-    <div className="w-full overflow-x-auto pb-6">
-      <div className="flex gap-4 min-w-[1100px]">
-        {COLUMNS.map((col) => {
-          const colApps = applications.filter(a => a.status === col.status);
+    <div className="space-y-4 w-full">
+      {/* Mobile Stage Selector Tabs (Visible on small screens) */}
+      <div className="sm:hidden flex gap-1 bg-slate-200/80 p-1 rounded-2xl overflow-x-auto no-scrollbar">
+        {columns.map((col) => {
+          const count = candidates.filter((c) => c.status === col.status).length;
+          const isActive = activeMobileStage === col.status;
+          return (
+            <button
+              key={col.status}
+              onClick={() => setActiveMobileStage(col.status)}
+              className={`flex-1 min-w-[75px] py-1.5 px-2 rounded-xl text-[10px] font-bold transition whitespace-nowrap ${
+                isActive ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              {col.title} ({count})
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Kanban Board Container (Horizontal Scroll on Mobile/Tablet) */}
+      <div className="flex gap-4 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory no-scrollbar w-full">
+        {columns.map((col) => {
+          const colCandidates = candidates.filter((c) => c.status === col.status);
+          const isMobileVisible = activeMobileStage === col.status;
+
           return (
             <div
               key={col.status}
-              className={`flex-1 rounded-2xl border-2 p-3 flex flex-col min-h-[520px] max-h-[750px] ${col.color}`}
+              className={`w-72 sm:w-80 shrink-0 bg-slate-100/90 rounded-3xl p-3 sm:p-4 border-t-4 ${col.color} border-x border-b border-slate-200 shadow-sm flex flex-col snap-start ${
+                isMobileVisible ? "block" : "hidden sm:flex"
+              }`}
             >
               {/* Column Header */}
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-extrabold text-sm text-slate-800">{col.label}</h4>
-                  <span className="w-5 h-5 rounded-full bg-white font-bold text-xs flex items-center justify-center text-slate-700 shadow-sm border border-slate-200">
-                    {colApps.length}
-                  </span>
-                </div>
+              <div className="flex items-center justify-between mb-3 px-1">
+                <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                  {col.title}
+                </span>
+                <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${col.badgeBg}`}>
+                  {colCandidates.length}
+                </span>
               </div>
 
               {/* Cards List */}
-              <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                {colApps.length === 0 ? (
-                  <div className="h-32 flex items-center justify-center text-xs text-slate-400 font-medium italic border-2 border-dashed border-slate-200 rounded-xl">
-                    No candidates
+              <div className="space-y-3 flex-1 overflow-y-auto max-h-[580px] pr-0.5">
+                {colCandidates.length === 0 ? (
+                  <div className="bg-white/60 border border-dashed border-slate-300 rounded-2xl p-6 text-center text-xs text-slate-400">
+                    No candidates in this stage
                   </div>
                 ) : (
-                  colApps.map((app) => {
-                    const nextSt = getNextStatus(app.status);
-                    return (
-                      <div
-                        key={app.id}
-                        className="bg-white rounded-xl p-3.5 shadow-sm hover:shadow-md border border-slate-200 transition relative group"
-                      >
-                        {/* Match & Trust header */}
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[11px] font-extrabold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
-                            {app.matchScore}% Match
-                          </span>
-                          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md flex items-center gap-1">
-                            <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                            Trust {app.workerTrustScore}
-                          </span>
-                        </div>
-
-                        {/* Candidate Basic */}
-                        <div className="flex gap-2.5 items-center mb-2.5">
+                  colCandidates.map((c) => (
+                    <div
+                      key={c.id}
+                      className="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm hover:shadow-md transition space-y-2.5"
+                    >
+                      {/* Candidate Header */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
                           <img
-                            src={app.workerAvatar || "https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=100&auto=format&fit=crop&q=80"}
-                            alt={app.workerName}
-                            className="w-10 h-10 rounded-xl object-cover border border-slate-200"
+                            src={c.workerAvatar || "https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=100&auto=format&fit=crop&q=80"}
+                            alt={c.workerName}
+                            className="w-9 h-9 rounded-xl object-cover border border-slate-200 shrink-0"
                           />
-                          <div className="min-w-0 flex-1">
-                            <div className="text-xs font-bold text-slate-900 truncate">{app.workerName}</div>
-                            <div className="text-[11px] text-amber-700 font-semibold truncate">{app.workerTrade}</div>
+                          <div>
+                            <h4 className="text-xs font-black text-slate-900 leading-tight">{c.workerName}</h4>
+                            <p className="text-[10px] font-semibold text-amber-700">{c.workerTrade}</p>
                           </div>
                         </div>
 
-                        {/* Details */}
-                        <div className="grid grid-cols-2 gap-1 text-[11px] text-slate-500 mb-3 bg-slate-50 p-2 rounded-lg">
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-slate-400" />
-                            {app.workerExperience} Yrs Exp
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-slate-400" />
-                            {app.workerCity}
-                          </div>
-                        </div>
+                        <span className="text-[10px] font-black text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-lg shrink-0">
+                          {c.matchScore}%
+                        </span>
+                      </div>
 
-                        <div className="text-[10px] text-slate-400 mb-3 truncate">
-                          Job: <strong>{app.jobTitle}</strong>
-                        </div>
-
-                        {/* Stage progression action button */}
-                        <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100">
-                          {app.status === "SHORTLISTED" && onScheduleInterview && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => onScheduleInterview(app)}
-                              className="text-[10px] px-2 py-1 flex-1 text-amber-800 border-amber-300 bg-amber-50"
-                            >
-                              <Calendar className="w-3 h-3 mr-1" /> Interview
-                            </Button>
-                          )}
-
-                          {nextSt && (
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              disabled={movingId === app.id}
-                              onClick={() => moveCandidate(app.id, nextSt)}
-                              className="text-[10px] px-2.5 py-1 flex-1 gap-1"
-                            >
-                              <span>Move to {nextSt.toLowerCase()}</span>
-                              <ArrowRight className="w-3 h-3" />
-                            </Button>
-                          )}
-
-                          {app.status === "HIRED" && (
-                            <div className="w-full text-center text-xs font-bold text-emerald-700 bg-emerald-100/70 py-1 rounded-lg">
-                              ✓ Successfully Hired
-                            </div>
-                          )}
+                      {/* Job & Experience */}
+                      <div className="text-[10px] text-slate-600 bg-slate-50 p-2 rounded-xl space-y-0.5">
+                        <div className="font-bold text-slate-800 truncate">{c.jobTitle}</div>
+                        <div className="flex items-center justify-between text-slate-500">
+                          <span>{c.workerExperience} Yrs Exp • {c.workerCity}</span>
+                          <span className="text-emerald-700 font-bold">Trust: {c.workerTrustScore}</span>
                         </div>
                       </div>
-                    );
-                  })
+
+                      {/* Quick Move Action Selector */}
+                      <div className="flex items-center gap-1 pt-1 border-t border-slate-100">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">Move:</span>
+                        <select
+                          value={c.status}
+                          onChange={(e) => moveCandidate(c.id, e.target.value as ApplicationStatus)}
+                          className="flex-1 text-[10px] font-bold bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                          {columns.map((o) => (
+                            <option key={o.status} value={o.status}>
+                              {o.title}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
             </div>
@@ -181,4 +156,4 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       </div>
     </div>
   );
-};
+}

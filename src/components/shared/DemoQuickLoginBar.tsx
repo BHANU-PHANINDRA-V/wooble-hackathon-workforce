@@ -1,70 +1,95 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { ShieldCheck, HardHat, Building2, Zap } from "lucide-react";
+import { ShieldCheck, HardHat, Building2, UserCog, Zap, Check } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-export const DemoQuickLoginBar: React.FC = () => {
-  const { user, demoLogin, logout } = useAuth();
+export function DemoQuickLoginBar() {
+  const { demoLogin, user } = useAuth();
+  const router = useRouter();
+  const [loadingRole, setLoadingRole] = useState<string | null>(null);
+
+  const roles = [
+    {
+      role: "WORKER" as const,
+      label: "Worker (Rahul K. - 92 Trust)",
+      shortLabel: "Worker (92)",
+      icon: HardHat,
+      color: "bg-blue-600 hover:bg-blue-700 text-white",
+      badgeColor: "bg-blue-500/30 text-blue-200",
+      target: "/worker/dashboard",
+    },
+    {
+      role: "EMPLOYER" as const,
+      label: "Employer (Tata Projects)",
+      shortLabel: "Employer (Tata)",
+      icon: Building2,
+      color: "bg-purple-600 hover:bg-purple-700 text-white",
+      badgeColor: "bg-purple-500/30 text-purple-200",
+      target: "/employer/dashboard",
+    },
+    {
+      role: "ADMIN" as const,
+      label: "Admin (Verification Queue)",
+      shortLabel: "Admin (Verify)",
+      icon: UserCog,
+      color: "bg-emerald-600 hover:bg-emerald-700 text-white",
+      badgeColor: "bg-emerald-500/30 text-emerald-200",
+      target: "/admin/dashboard",
+    },
+  ];
+
+  const handleRoleSwitch = async (role: "WORKER" | "EMPLOYER" | "ADMIN", target: string) => {
+    setLoadingRole(role);
+    try {
+      await demoLogin(role);
+      router.push(target);
+    } catch {} finally {
+      setLoadingRole(null);
+    }
+  };
 
   return (
-    <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white text-xs py-2 px-4 shadow-md sticky top-0 z-50 border-b border-blue-900/40">
-      <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1 bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded border border-amber-500/30">
-            <Zap className="w-3.5 h-3.5" /> 1-CLICK DEMO ACCESS
+    <div className="bg-slate-950 text-white border-b border-slate-800 text-[11px] py-1.5 px-3 shadow-inner w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="flex h-2 w-2 relative">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <span className="hidden sm:inline text-slate-300">
-            Instant evaluation roles with pre-seeded Indian trade & recruitment data
+          <span className="font-extrabold tracking-wide uppercase text-amber-400 flex items-center gap-1">
+            <Zap className="w-3 h-3 fill-amber-400" />
+            <span className="hidden sm:inline">1-Click Demo Evaluation Hub:</span>
+            <span className="sm:hidden">1-Click:</span>
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => demoLogin("WORKER")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold transition ${
-              user?.role === "WORKER"
-                ? "bg-blue-500 text-white shadow-sm"
-                : "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
-            }`}
-          >
-            <HardHat className="w-3.5 h-3.5 text-amber-400" />
-            Worker (Rahul K. - 92 Trust)
-          </button>
+        <div className="flex items-center gap-1.5 shrink-0 overflow-x-auto no-scrollbar">
+          {roles.map((r) => {
+            const Icon = r.icon;
+            const isActive = user?.role === r.role;
+            const isLoading = loadingRole === r.role;
 
-          <button
-            onClick={() => demoLogin("EMPLOYER")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold transition ${
-              user?.role === "EMPLOYER"
-                ? "bg-blue-500 text-white shadow-sm"
-                : "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
-            }`}
-          >
-            <Building2 className="w-3.5 h-3.5 text-blue-400" />
-            Employer (Tata Projects)
-          </button>
-
-          <button
-            onClick={() => demoLogin("ADMIN")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold transition ${
-              user?.role === "ADMIN"
-                ? "bg-blue-500 text-white shadow-sm"
-                : "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            Admin (Verification Queue)
-          </button>
-
-          {user && (
-            <button
-              onClick={logout}
-              className="text-slate-400 hover:text-white px-2 py-1 underline transition ml-1"
-            >
-              Sign out
-            </button>
-          )}
+            return (
+              <button
+                key={r.role}
+                onClick={() => handleRoleSwitch(r.role, r.target)}
+                disabled={isLoading}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition shadow-sm shrink-0 active:scale-95 ${
+                  isActive
+                    ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-slate-900 " + r.color
+                    : r.color + " opacity-90 hover:opacity-100"
+                }`}
+              >
+                <Icon className="w-3 h-3" />
+                <span className="hidden md:inline">{r.label}</span>
+                <span className="md:hidden">{r.shortLabel}</span>
+                {isActive && <Check className="w-2.5 h-2.5 text-amber-300 ml-0.5" />}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
   );
-};
+}
