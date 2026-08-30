@@ -5,8 +5,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-}
+  }
 
 model User {
   id           String    @id @default(cuid())
@@ -18,6 +17,8 @@ model User {
   avatar       String?
   isVerified   Boolean   @default(false)
   isSuspended  Boolean   @default(false)
+  resetPasswordToken String?
+  resetPasswordExpiry DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
