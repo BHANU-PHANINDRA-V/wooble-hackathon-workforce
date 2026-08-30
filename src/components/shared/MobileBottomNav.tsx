@@ -9,7 +9,35 @@ export const MobileBottomNav: React.FC = () => {
   const { user } = useAuth();
   const pathname = usePathname();
 
-  if (!user) return null;
+  if (!user) {
+    const unauthNavItems = [
+      { label: "Home", href: "/", icon: HardHat },
+      { label: "Find Jobs", href: "/worker/jobs", icon: Search },
+      { label: "Sign In", href: "/login", icon: User },
+      { label: "Register", href: "/register", icon: ShieldCheck },
+    ];
+
+    return (
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-2 px-3 z-40 shadow-2xl flex items-center justify-around">
+        {unauthNavItems.map((item, idx) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={idx}
+              href={item.href}
+              className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition ${
+                isActive ? "text-blue-600 scale-105" : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Icon className={`w-5 h-5 ${isActive ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    );
+  }
 
   if (user.role === "WORKER") {
     const navItems = [

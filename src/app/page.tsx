@@ -54,7 +54,7 @@ export default function LandingPage() {
             </p>
 
             {/* CTAs */}
-            <div className="flex flex-wrap justify-center gap-3.5 mb-8">
+            <div className="flex flex-wrap justify-center gap-3.5 mb-6">
               <Link href="/worker/jobs">
                 <Button variant="primary" size="lg" className="gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/30">
                   <HardHat className="w-5 h-5 text-amber-300" />
@@ -68,6 +68,17 @@ export default function LandingPage() {
                   <Building2 className="w-5 h-5 text-blue-300" />
                   <span>Hire Skilled Workers</span>
                 </Button>
+              </Link>
+            </div>
+
+            {/* Quick Auth Links */}
+            <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-300 mb-8 font-medium">
+              <span className="text-slate-400">Account:</span>
+              <Link href="/login" className="text-amber-300 hover:text-amber-200 font-bold underline-offset-4 hover:underline flex items-center gap-1 bg-white/10 px-3 py-1 rounded-lg border border-white/10">
+                <span>Sign In</span> →
+              </Link>
+              <Link href="/register" className="text-teal-300 hover:text-teal-200 font-bold underline-offset-4 hover:underline flex items-center gap-1 bg-white/10 px-3 py-1 rounded-lg border border-white/10">
+                <span>Register Free</span> →
               </Link>
             </div>
 

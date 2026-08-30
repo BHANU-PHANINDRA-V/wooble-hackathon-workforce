@@ -3,10 +3,23 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { SessionUser } from "@/types";
 import { useRouter } from "next/navigation";
 
+interface RegisterPayload {
+  name: string;
+  email: string;
+  phone?: string;
+  password?: string;
+  role: "WORKER" | "EMPLOYER";
+  primaryOccupation?: string;
+  locationCity?: string;
+  companyName?: string;
+  industry?: string;
+}
+
 interface AuthContextType {
   user: SessionUser | null;
   loading: boolean;
-  login: (email: string, role?: string) => Promise<boolean>;
+  login: (email: string, password?: string) => Promise<boolean>;
+  register: (payload: RegisterPayload) => Promise<{ success: boolean; error?: string }>;
   demoLogin: (role: "WORKER" | "EMPLOYER" | "ADMIN") => Promise<boolean>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -16,6 +29,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   login: async () => false,
+  register: async () => ({ success: false }),
   demoLogin: async () => false,
   logout: async () => {},
   refreshUser: async () => {},
@@ -67,6 +81,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const register = async (payload: RegisterPayload): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUser(data.user);
+        if (payload.role === "WORKER") router.push("/worker/dashboard");
+        else if (payload.role === "EMPLOYER") router.push("/employer/dashboard");
+        return { success: true };
+      }
+      return { success: false, error: data.error || "Registration failed" };
+    } catch {
+      return { success: false, error: "Network error during registration. Please try again." };
+    }
+  };
+
   const demoLogin = async (role: "WORKER" | "EMPLOYER" | "ADMIN"): Promise<boolean> => {
     try {
       const res = await fetch("/api/auth/demo-login", {
@@ -95,7 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, demoLogin, logout, refreshUser: fetchCurrentUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, demoLogin, logout, refreshUser: fetchCurrentUser }}>
       {children}
     </AuthContext.Provider>
   );

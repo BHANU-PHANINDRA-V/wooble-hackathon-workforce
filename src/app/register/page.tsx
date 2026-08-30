@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register } = useAuth();
   const [role, setRole] = useState<"WORKER" | "EMPLOYER">("WORKER");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -25,35 +26,22 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
 
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          phone,
-          password,
-          role,
-          primaryOccupation,
-          locationCity,
-          companyName,
-          industry,
-        }),
-      });
+    const result = await register({
+      name,
+      email,
+      phone,
+      password,
+      role,
+      primaryOccupation,
+      locationCity,
+      companyName,
+      industry,
+    });
 
-      const data = await res.json();
-      if (res.ok) {
-        if (role === "WORKER") router.push("/worker/dashboard");
-        else router.push("/employer/dashboard");
-      } else {
-        setError(data.error || "Registration failed");
-      }
-    } catch {
-      setError("Failed to register. Please try again.");
-    } finally {
-      setLoading(false);
+    if (!result.success) {
+      setError(result.error || "Failed to register. Please check your details.");
     }
+    setLoading(false);
   };
 
   return (
