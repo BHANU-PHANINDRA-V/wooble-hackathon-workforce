@@ -1,0 +1,388 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  role         String    @default("WORKER") // WORKER, EMPLOYER, ADMIN
+  name         String
+  phone        String?
+  avatar       String?
+  isVerified   Boolean   @default(false)
+  isSuspended  Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  workerProfile   WorkerProfile?
+  employerProfile EmployerProfile?
+  sentMessages    Message[]        @relation("SentMessages")
+  notifications   Notification[]
+  submittedReports Report[]        @relation("UserReports")
+  reviewsGiven    Review[]         @relation("ReviewsGiven")
+  reviewsReceived Review[]         @relation("ReviewsReceived")
+}
+
+model WorkerProfile {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  primaryOccupation    String
+  bio                  String?
+  experienceYears      Float    @default(0)
+  expectedSalary       Int      @default(0)
+  salaryType           String   @default("MONTHLY") // MONTHLY, DAILY, HOURLY
+  locationCity         String
+  locationState        String   @default("Telangana")
+  latitude             Float    @default(17.3850)
+  longitude            Float    @default(78.4867)
+  preferredWorkRadiusKm Int     @default(15)
+  availabilityStatus   String   @default("AVAILABLE_NOW") // AVAILABLE_NOW, AVAILABLE_FROM_DATE, EMPLOYED, NOT_LOOKING
+  availableFromDate    DateTime?
+  preferredShift       String   @default("DAY") // DAY, NIGHT, ROTATIONAL, FLEXIBLE
+  easyMode             Boolean  @default(false)
+  language             String   @default("en")
+  profileCompleteness  Int      @default(0)
+  trustScore           Int      @default(0)
+  isIdentityVerified   Boolean  @default(false)
+  phonePublic          Boolean  @default(false)
+  publicProfileUrl     String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  skills         WorkerSkill[]
+  experiences    Experience[]
+  certifications Certification[]
+  workSamples    WorkSample[]
+  applications   Application[]
+  jobAlerts      JobAlert[]
+  shortlistedBy  CandidateShortlist[]
+  notes          CandidateNote[]
+  trustScoreLogs TrustScoreLog[]
+}
+
+model EmployerProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  designation String   @default("Recruiter / HR Manager")
+  department  String?  @default("Operations")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  jobsPosted      Job[]
+  shortlists      CandidateShortlist[]
+  candidateNotes  CandidateNote[]
+}
+
+model Company {
+  id                 String   @id @default(cuid())
+  name               String
+  logo               String?
+  industry           String
+  description        String
+  locationCity       String
+  locationState      String   @default("Telangana")
+  companySize        String   @default("50-200")
+  website            String?
+  gstinNumber        String?
+  isVerified         Boolean  @default(false)
+  verificationStatus String   @default("PENDING") // PENDING, VERIFIED, REJECTED
+  contactEmail       String
+  contactPhone       String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  employers EmployerProfile[]
+  jobs      Job[]
+}
+
+model Skill {
+  id       String        @id @default(cuid())
+  name     String        @unique
+  category String        @default("General")
+
+  workers WorkerSkill[]
+  jobs    JobSkill[]
+}
+
+model WorkerSkill {
+  id                String    @id @default(cuid())
+  workerProfileId   String
+  workerProfile     WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+  skillId           String
+  skill             Skill     @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  experienceLevel   String    @default("SKILLED") // BEGINNER, INTERMEDIATE, SKILLED, ADVANCED, EXPERT
+  yearsOfExperience Float     @default(1)
+  isVerified        Boolean   @default(false)
+  verifiedAt        DateTime?
+
+  @@unique([workerProfileId, skillId])
+}
+
+model Experience {
+  id              String        @id @default(cuid())
+  workerProfileId String
+  workerProfile   WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+  companyName     String
+  jobTitle        String
+  location        String
+  startDate       DateTime
+  endDate         DateTime?
+  isCurrent       Boolean       @default(false)
+  description     String?
+  skillsUsed      String?
+  createdAt       DateTime      @default(now())
+}
+
+model Certification {
+  id                 String    @id @default(cuid())
+  workerProfileId    String
+  workerProfile      WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+  name               String
+  issuingOrg         String
+  certificateNumber  String
+  issueDate          DateTime
+  expiryDate         DateTime?
+  documentUrl        String?
+  verificationStatus String    @default("PENDING") // PENDING, VERIFIED, REJECTED
+  verifiedAt         DateTime?
+  rejectReason       String?
+  createdAt          DateTime  @default(now())
+}
+
+model WorkSample {
+  id              String        @id @default(cuid())
+  workerProfileId String
+  workerProfile   WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+  title           String
+  description     String
+  imageUrl        String
+  category        String
+  createdAt       DateTime      @default(now())
+}
+
+model Job {
+  id                    String    @id @default(cuid())
+  employerId            String
+  employer              EmployerProfile @relation(fields: [employerId], references: [id], onDelete: Cascade)
+  companyId             String
+  company               Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title                 String
+  category              String
+  description           String
+  numberOfOpenings      Int       @default(1)
+  minExperience         Float     @default(0)
+  maxExperience         Float?
+  minSalary             Int
+  maxSalary             Int
+  salaryType            String    @default("MONTHLY") // MONTHLY, DAILY, HOURLY
+  locationCity          String
+  locationState         String    @default("Telangana")
+  latitude              Float     @default(17.3850)
+  longitude             Float     @default(78.4867)
+  shiftType             String    @default("DAY") // DAY, NIGHT, ROTATIONAL, FLEXIBLE
+  workingHours          String    @default("9 AM - 6 PM")
+  employmentType        String    @default("Full-Time")
+  immediateJoining      Boolean   @default(true)
+  joiningDate           DateTime?
+  foodProvided          Boolean   @default(false)
+  accommodationProvided Boolean   @default(false)
+  transportProvided     Boolean   @default(false)
+  insuranceProvided     Boolean   @default(false)
+  pfEsiProvided         Boolean   @default(true)
+  overtimeAvailable     Boolean   @default(true)
+  status                String    @default("ACTIVE") // DRAFT, ACTIVE, PAUSED, CLOSED
+  isBulkHiring          Boolean   @default(false)
+  targetHires           Int       @default(1)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  skills        JobSkill[]
+  applications  Application[]
+  conversations Conversation[]
+}
+
+model JobSkill {
+  id         String @id @default(cuid())
+  jobId      String
+  job        Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  skillId    String
+  skill      Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  isRequired Boolean @default(true)
+  minLevel   String @default("SKILLED") // BEGINNER, INTERMEDIATE, SKILLED, ADVANCED, EXPERT
+
+  @@unique([jobId, skillId])
+}
+
+model Application {
+  id                 String   @id @default(cuid())
+  jobId              String
+  job                Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  workerProfileId    String
+  workerProfile      WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+  status             String   @default("APPLIED") // APPLIED, SCREENING, SHORTLISTED, INTERVIEW, SELECTED, OFFER, HIRED, REJECTED
+  appliedAt          DateTime @default(now())
+  matchScore         Int      @default(0)
+  matchBreakdownJson String?
+  coverNote          String?
+  employerNotes      String?
+  updatedAt          DateTime @updatedAt
+
+  statusHistory ApplicationStatusHistory[]
+  interviews    Interview[]
+  reviews       Review[]
+
+  @@unique([jobId, workerProfileId])
+}
+
+model ApplicationStatusHistory {
+  id            String   @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  previousStatus String?
+  newStatus     String
+  changedById   String?
+  changeReason  String?
+  createdAt     DateTime @default(now())
+}
+
+model Interview {
+  id              String   @id @default(cuid())
+  applicationId   String
+  application     Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  scheduledAt     DateTime
+  interviewType   String   @default("OFFLINE") // OFFLINE, ONLINE
+  locationOrLink  String
+  instructions    String?
+  status          String   @default("SCHEDULED") // SCHEDULED, ACCEPTED, REJECTED, RESCHEDULE_REQUESTED, COMPLETED, CANCELLED
+  feedback        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Conversation {
+  id             String   @id @default(cuid())
+  workerUserId   String
+  employerUserId String
+  jobId          String?
+  job            Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  lastMessageAt  DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  messages Message[]
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  content        String
+  attachmentUrl  String?
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("INFO")
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id                 String   @id @default(cuid())
+  applicationId      String?
+  application        Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  reviewerId         String
+  reviewer           User     @relation("ReviewsGiven", fields: [reviewerId], references: [id], onDelete: Cascade)
+  revieweeId         String
+  reviewee           User     @relation("ReviewsReceived", fields: [revieweeId], references: [id], onDelete: Cascade)
+  reviewType         String   // EMPLOYER_TO_WORKER, WORKER_TO_EMPLOYER
+  overallRating      Float    @default(5.0)
+  skillRating        Float?   @default(5.0)
+  reliabilityRating  Float?   @default(5.0)
+  punctualityRating  Float?   @default(5.0)
+  workplaceRating    Float?   @default(5.0)
+  comment            String?
+  createdAt          DateTime @default(now())
+}
+
+model JobAlert {
+  id              String        @id @default(cuid())
+  workerProfileId String
+  workerProfile   WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+  title           String
+  category        String
+  locationCity    String
+  minSalary       Int           @default(0)
+  radiusKm        Int           @default(20)
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+}
+
+model CandidateShortlist {
+  id              String        @id @default(cuid())
+  employerId      String
+  employer        EmployerProfile @relation(fields: [employerId], references: [id], onDelete: Cascade)
+  workerProfileId String
+  workerProfile   WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+  notes           String?
+  createdAt       DateTime      @default(now())
+
+  @@unique([employerId, workerProfileId])
+}
+
+model CandidateNote {
+  id              String        @id @default(cuid())
+  employerId      String
+  employer        EmployerProfile @relation(fields: [employerId], references: [id], onDelete: Cascade)
+  workerProfileId String
+  workerProfile   WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+  content         String
+  createdAt       DateTime      @default(now())
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  reporterId  String
+  reporter    User     @relation("UserReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType  String   // JOB, WORKER, EMPLOYER
+  targetId    String
+  reason      String
+  description String
+  status      String   @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  adminNotes  String?
+  createdAt   DateTime @default(now())
+}
+
+model TrustScoreLog {
+  id                       String        @id @default(cuid())
+  workerProfileId          String
+  workerProfile            WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+  overallScore             Int
+  identityScore            Int           @default(0)
+  skillScore               Int           @default(0)
+  certScore                Int           @default(0)
+  experienceScore          Int           @default(0)
+  ratingScore              Int           @default(0)
+  jobCompletionScore       Int           @default(0)
+  profileCompletenessScore Int           @default(0)
+  breakdownJson            String
+  calculatedAt             DateTime      @default(now())
+}
