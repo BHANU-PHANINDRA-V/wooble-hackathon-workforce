@@ -1,6 +1,6 @@
 "use client";
-import React, { useState } from "react";
-import { Building2, ShieldCheck, CheckCircle2, Upload, FileText } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Building2, ShieldCheck, CheckCircle2, Save } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 export default function EmployerCompanyPage() {
@@ -8,12 +8,47 @@ export default function EmployerCompanyPage() {
   const [industry, setIndustry] = useState("Infrastructure & Industrial Engineering");
   const [gstin, setGstin] = useState("36AAACT2807M1ZY");
   const [city, setCity] = useState("Hyderabad");
+  const [description, setDescription] = useState("");
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetch("/api/employer/company")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.company) {
+          setName(data.company.name || "");
+          setIndustry(data.company.industry || "");
+          setGstin(data.company.gstinNumber || "");
+          setCity(data.company.locationCity || "Hyderabad");
+          setDescription(data.company.description || "");
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/employer/company", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          industry,
+          gstinNumber: gstin,
+          locationCity: city,
+          description,
+        }),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      }
+    } catch {} finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -73,8 +108,19 @@ export default function EmployerCompanyPage() {
           />
         </div>
 
-        <Button variant="primary" size="lg" type="submit" className="w-full font-bold">
-          {saved ? "Profile Updated ✓" : "Save Changes"}
+        <div>
+          <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Company Description</label>
+          <textarea
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm"
+          />
+        </div>
+
+        <Button variant="primary" size="lg" type="submit" isLoading={loading} className="w-full font-bold gap-1.5">
+          <Save className="w-4 h-4" />
+          {saved ? "Profile Updated & Saved ✓" : "Save Changes"}
         </Button>
       </form>
     </div>

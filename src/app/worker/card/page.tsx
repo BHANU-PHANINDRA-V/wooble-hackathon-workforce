@@ -1,28 +1,36 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { DigitalIDCard } from "@/components/worker/DigitalIDCard";
+import { useAuth } from "@/context/AuthContext";
 import { Info } from "lucide-react";
 
 export default function WorkerCardPage() {
-  const workerData = {
-    id: "worker-demo",
-    name: "Rahul Kumar",
-    primaryOccupation: "Industrial & Commercial Electrician",
-    experienceYears: 6,
-    expectedSalary: 28000,
-    locationCity: "Hyderabad",
-    locationState: "Telangana",
-    trustScore: 92,
-    isIdentityVerified: true,
+  const { user } = useAuth();
+  const [workerData, setWorkerData] = useState<any | null>(null);
+
+  useEffect(() => {
+    fetch("/api/workers/profile")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.worker) setWorkerData(data.worker);
+      })
+      .catch(() => {});
+  }, []);
+
+  const workerCardData = {
+    id: workerData?.id || "worker-demo",
+    name: workerData?.user?.name || user?.name || "Rahul Kumar",
+    primaryOccupation: workerData?.primaryOccupation || "Industrial & Commercial Electrician",
+    experienceYears: workerData?.experienceYears || 6,
+    expectedSalary: workerData?.expectedSalary || 28000,
+    locationCity: workerData?.locationCity || "Hyderabad",
+    locationState: workerData?.locationState || "Telangana",
+    trustScore: workerData?.trustScore || 92,
+    isIdentityVerified: workerData?.isIdentityVerified ?? true,
     rating: 4.8,
-    avatar: "https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150&auto=format&fit=crop&q=80",
-    phone: "+91 91234 56789",
-    skills: [
-      { skill: { name: "Industrial Electrical Wiring" }, isVerified: true },
-      { skill: { name: "Panel Board Assembly" }, isVerified: true },
-      { skill: { name: "Motor Rewinding & Repair" }, isVerified: true },
-      { skill: { name: "Solar Panel Installation" }, isVerified: true },
-    ],
+    avatar: workerData?.user?.avatar || user?.avatar || "https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150&auto=format&fit=crop&q=80",
+    phone: workerData?.user?.phone || user?.phone || "+91 91234 56789",
+    skills: workerData?.skills || [],
   };
 
   return (
@@ -38,13 +46,13 @@ export default function WorkerCardPage() {
       </div>
 
       <div className="flex justify-center">
-        <DigitalIDCard worker={workerData} showShare={true} />
+        <DigitalIDCard worker={workerCardData} showShare={true} />
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-xs text-blue-900 max-w-md mx-auto flex items-start gap-2.5">
         <Info className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
         <div>
-          <strong>QR Verification:</strong> Scanning this QR code opens your public verified bio page (<code className="bg-blue-100 px-1 py-0.5 rounded">/qr/{workerData.id}</code>) without exposing sensitive private contact details without permission.
+          <strong>QR Verification:</strong> Scanning this QR code opens your public verified bio page (<code className="bg-blue-100 px-1 py-0.5 rounded">/qr/{workerCardData.id}</code>) without exposing private personal phone numbers.
         </div>
       </div>
     </div>

@@ -10,30 +10,43 @@ import {
   Sparkles,
   ArrowRight,
   TrendingUp,
-  UserCheck,
-  CheckCircle2,
-  Clock,
   Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 export default function EmployerDashboard() {
   const { user } = useAuth();
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [companyData, setCompanyData] = useState<any | null>(null);
+  const [metrics, setMetrics] = useState<any>({
+    openJobs: 8,
+    totalApplications: 68,
+    shortlisted: 18,
+    interviews: 12,
+    hired: 7,
+  });
 
   useEffect(() => {
-    fetch("/api/jobs")
+    fetch("/api/employer/company")
       .then((res) => res.json())
-      .then((data) => setJobs(data.jobs || []))
+      .then((data) => {
+        if (data.company) {
+          setCompanyData(data.company);
+          if (data.metrics) setMetrics(data.metrics);
+        }
+      })
       .catch(() => {});
   }, []);
 
+  const companyName = companyData?.name || "Tata Projects Limited";
+  const industry = companyData?.industry || "Infrastructure & Industrial Construction";
+  const locationCity = companyData?.locationCity || "Hyderabad";
+
   const stats = [
-    { label: "Open Jobs", value: 8, color: "text-blue-700", bg: "bg-blue-50 border-blue-200" },
-    { label: "Applications", value: 68, color: "text-slate-800", bg: "bg-slate-50 border-slate-200" },
-    { label: "Shortlisted", value: 18, color: "text-purple-700", bg: "bg-purple-50 border-purple-200" },
-    { label: "Interviews", value: 12, color: "text-amber-700", bg: "bg-amber-50 border-amber-200" },
-    { label: "Hired ✓", value: 7, color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" },
+    { label: "Open Jobs", value: metrics.openJobs || 8, color: "text-blue-700", bg: "bg-blue-50 border-blue-200" },
+    { label: "Applications", value: metrics.totalApplications || 68, color: "text-slate-800", bg: "bg-slate-50 border-slate-200" },
+    { label: "Shortlisted", value: metrics.shortlisted || 18, color: "text-purple-700", bg: "bg-purple-50 border-purple-200" },
+    { label: "Interviews", value: metrics.interviews || 12, color: "text-amber-700", bg: "bg-amber-50 border-amber-200" },
+    { label: "Hired ✓", value: metrics.hired || 7, color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" },
   ];
 
   return (
@@ -44,8 +57,8 @@ export default function EmployerDashboard() {
           <span className="text-xs font-bold text-blue-300 uppercase tracking-wider bg-blue-500/20 px-3 py-1 rounded-full border border-blue-400/30">
             Verified Enterprise Employer
           </span>
-          <h1 className="text-2xl sm:text-3xl font-black text-white mt-2">Tata Projects Limited</h1>
-          <p className="text-xs text-slate-300 mt-1">Infrastructure & Industrial Construction • Cherlapally & Gachibowli Operations</p>
+          <h1 className="text-2xl sm:text-3xl font-black text-white mt-2">{companyName}</h1>
+          <p className="text-xs text-slate-300 mt-1">{industry} • {locationCity} Operations</p>
         </div>
 
         <div className="flex gap-3">
@@ -83,7 +96,7 @@ export default function EmployerDashboard() {
         <div className="space-y-3">
           <div>
             <div className="flex justify-between text-xs font-bold text-slate-600 mb-1">
-              <span>Applied (68 candidates)</span>
+              <span>Applied ({metrics.totalApplications || 68} candidates)</span>
               <span>100%</span>
             </div>
             <div className="w-full bg-slate-100 rounded-full h-3">
@@ -93,37 +106,37 @@ export default function EmployerDashboard() {
 
           <div>
             <div className="flex justify-between text-xs font-bold text-slate-600 mb-1">
-              <span>Shortlisted (18 candidates)</span>
-              <span>26.4%</span>
+              <span>Shortlisted ({metrics.shortlisted || 18} candidates)</span>
+              <span>{Math.round(((metrics.shortlisted || 18) / (metrics.totalApplications || 68)) * 100)}%</span>
             </div>
             <div className="w-full bg-slate-100 rounded-full h-3">
-              <div className="bg-purple-600 h-3 rounded-full" style={{ width: "26.4%" }} />
+              <div className="bg-purple-600 h-3 rounded-full" style={{ width: `${Math.round(((metrics.shortlisted || 18) / (metrics.totalApplications || 68)) * 100)}%` }} />
             </div>
           </div>
 
           <div>
             <div className="flex justify-between text-xs font-bold text-slate-600 mb-1">
-              <span>Interviews Scheduled (12 candidates)</span>
-              <span>17.6%</span>
+              <span>Interviews ({metrics.interviews || 12} candidates)</span>
+              <span>{Math.round(((metrics.interviews || 12) / (metrics.totalApplications || 68)) * 100)}%</span>
             </div>
             <div className="w-full bg-slate-100 rounded-full h-3">
-              <div className="bg-amber-600 h-3 rounded-full" style={{ width: "17.6%" }} />
+              <div className="bg-amber-600 h-3 rounded-full" style={{ width: `${Math.round(((metrics.interviews || 12) / (metrics.totalApplications || 68)) * 100)}%` }} />
             </div>
           </div>
 
           <div>
             <div className="flex justify-between text-xs font-bold text-slate-600 mb-1">
-              <span>Hired ✓ (7 workers)</span>
-              <span>10.2%</span>
+              <span>Hired ✓ ({metrics.hired || 7} workers)</span>
+              <span>{Math.round(((metrics.hired || 7) / (metrics.totalApplications || 68)) * 100)}%</span>
             </div>
             <div className="w-full bg-slate-100 rounded-full h-3">
-              <div className="bg-emerald-600 h-3 rounded-full" style={{ width: "10.2%" }} />
+              <div className="bg-emerald-600 h-3 rounded-full" style={{ width: `${Math.round(((metrics.hired || 7) / (metrics.totalApplications || 68)) * 100)}%` }} />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Active Jobs & Candidate Discovery Quick Links */}
+      {/* Quick Links */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
@@ -154,7 +167,7 @@ export default function EmployerDashboard() {
           </div>
           <Link href="/employer/bulk-hiring" className="mt-4">
             <Button variant="outline" size="sm" className="w-full text-xs font-bold text-amber-800 border-amber-300 hover:bg-amber-50">
-              Manage Bulk Campaigns (50 Slots)
+              Manage Bulk Campaigns
             </Button>
           </Link>
         </div>
