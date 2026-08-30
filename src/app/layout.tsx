@@ -6,6 +6,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { DemoQuickLoginBar } from "@/components/shared/DemoQuickLoginBar";
 import { Navbar } from "@/components/shared/Navbar";
 import { MobileBottomNav } from "@/components/shared/MobileBottomNav";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "Blue Workforce Connect '26 — Verified Blue-Collar Recruitment Platform",
@@ -30,6 +31,7 @@ export default function RootLayout({
             </AuthProvider>
           </EasyModeProvider>
         </LanguageProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
