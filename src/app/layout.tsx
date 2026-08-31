@@ -7,6 +7,7 @@ import { EasyModeProvider } from "@/context/EasyModeContext";
 import { DemoQuickLoginBar } from "@/components/shared/DemoQuickLoginBar";
 import { Navbar } from "@/components/shared/Navbar";
 import { MobileBottomNav } from "@/components/shared/MobileBottomNav";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -43,6 +44,7 @@ export default function RootLayout({
             </AuthProvider>
           </EasyModeProvider>
         </LanguageProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
